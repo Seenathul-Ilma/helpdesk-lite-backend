@@ -6,11 +6,11 @@ services:
     restart: unless-stopped
 
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: helpdesk_db
 
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
     volumes:
       - helpdesk_mysql_data:/var/lib/mysql
@@ -22,7 +22,7 @@ services:
         - ping
         - -h
         - localhost
-        - -prootpassword
+        - -p1234
       interval: 10s
       timeout: 5s
       retries: 10

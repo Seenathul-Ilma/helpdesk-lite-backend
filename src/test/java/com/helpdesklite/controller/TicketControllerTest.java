@@ -1,6 +1,6 @@
 package com.helpdesklite.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.helpdesklite.enums.TicketPriority;
 import com.helpdesklite.enums.TicketStatus;
 import com.helpdesklite.dto.StatusUpdateRequest;
