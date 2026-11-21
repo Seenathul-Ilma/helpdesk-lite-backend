@@ -30,7 +30,6 @@ public class TicketStatusHistory {
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
 
-    // getters/setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getTicketId() { return ticketId; }
