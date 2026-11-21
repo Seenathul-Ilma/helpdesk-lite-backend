@@ -1,203 +1,371 @@
-# Helpdesk Lite
+# HelpDesk Lite API
 
-Helpdesk Lite is a lightweight REST API for creating and managing support tickets. It is built with Spring Boot and MySQL, and includes ticket priorities, status transitions, assignee references, and status-history records.
+A RESTful ticket management system built with **Java 25, Spring Boot 4, Spring Data JPA, and MySQL**. HelpDesk Lite provides APIs for creating, retrieving, filtering, assigning, and managing support tickets with controlled status transitions and status history tracking.
 
-## Technology
+## Features
 
-- Java 25
-- Spring Boot 4.0.10
-- Spring Web MVC
-- Spring Data JPA / Hibernate
-- MySQL 8.4
-- Flyway
-- Bean Validation
-- Maven
-- Docker Compose
+- **Ticket Management:** Create and retrieve support tickets.
+- **Ticket Filtering:** Filter tickets by status and priority.
+- **Status Management:** Update ticket status through a predefined workflow.
+- **Status Validation:** Prevent invalid status transitions.
+- **Assignee Management:** Assign or reassign support agents to tickets.
+- **Status History:** Maintain a record of ticket status changes.
+- **Request Validation:** Validate incoming requests using Jakarta Bean Validation.
+- **Global Exception Handling:** Return consistent error responses.
+- **Database Migrations:** Manage database schema using Flyway.
 
-## Ticket model
+## Technology Stack
 
-### Priorities
+| Technology | Purpose |
+|---|---|
+| Java 25 | Programming language |
+| Spring Boot 4.0.10 | Backend framework |
+| Spring Web | REST API development |
+| Spring Data JPA | Database persistence |
+| Hibernate | ORM |
+| MySQL 8 | Relational database |
+| Flyway | Database migrations |
+| Jakarta Validation | Request validation |
+| Maven | Build and dependency management |
+| Docker Compose | MySQL container management |
+| JUnit 5 / Spring Boot Test | Testing |
+
+## Prerequisites
+
+Make sure you have the following installed:
+
+- Java 25 or compatible configured JDK
+- Docker Desktop
+- Git
+- Postman (for API testing)
+
+Maven is managed through the included Maven Wrapper.
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Seenathul-Ilma/helpdesk-lite-backend.git
+cd helpdesk-lite
+```
+
+### 2. Start the MySQL database
+
+Start the database container using Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+Check the container status:
+
+```bash
+docker compose ps
+```
+
+Ensure the MySQL container is running and healthy before starting the application.
+
+### 3. Configure database connection
+
+The application uses environment variables for database configuration.
+
+| Variable | Description |
+|---|---|
+| DB_URL | MySQL JDBC connection URL |
+| DB_USERNAME | Database username |
+| DB_PASSWORD | Database password |
+
+The application configuration provides default values. Ensure the database credentials match those configured in `docker-compose.yml`.
+
+### 4. Build the application
+
+Windows PowerShell:
+
+```powershell
+.\mvnw.cmd clean compile
+```
+
+### 5. Run database migrations and start the application
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Flyway automatically applies pending migrations during application startup.
+
+The API will be available at:
+
+`http://localhost:8080`
+
+### 6. Run tests
+
+```powershell
+.\mvnw.cmd test
+```
+
+## API Documentation
+
+**Base URL**
+
+```text
+http://localhost:8080/api/tickets
+```
+
+### Available Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/tickets` | Create a new ticket |
+| GET | `/api/tickets` | Retrieve all tickets |
+| GET | `/api/tickets/{id}` | Retrieve a ticket by ID |
+| PATCH | `/api/tickets/{id}/status` | Update ticket status |
+| PATCH | `/api/tickets/{id}/assignee` | Assign or reassign an agent |
+| GET | `/api/tickets/{id}/history` | Retrieve ticket status history |
+
+### 1. Create a Ticket
+
+**POST** `/api/tickets`
+
+Request body:
+
+```json
+{
+  "title": "Broken monitor",
+  "description": "Screen flickering on my Dell monitor",
+  "priority": "HIGH",
+  "requesterName": "Alice Smith",
+  "requesterEmail": "alice@example.com"
+}
+```
+
+Expected response: `201 Created`
+
+A newly created ticket automatically receives the `OPEN` status.
+
+### 2. Retrieve All Tickets
+
+**GET** `/api/tickets`
+
+Retrieve all available tickets.
+
+Optional query parameters:
+
+- `status`
+- `priority`
+
+Examples:
+
+```http
+GET /api/tickets?status=OPEN
+```
+
+```http
+GET /api/tickets?priority=HIGH
+```
+
+```http
+GET /api/tickets?status=IN_PROGRESS&priority=HIGH
+```
+
+Expected response: `200 OK`
+
+### 3. Retrieve a Ticket by ID
+
+**GET** `/api/tickets/{id}`
+
+Example:
+
+```http
+GET /api/tickets/1
+```
+
+Expected response: `200 OK`
+
+Returns `404 Not Found` if the requested ticket does not exist.
+
+### 4. Update Ticket Status
+
+**PATCH** `/api/tickets/{id}/status`
+
+Request body:
+
+```json
+{
+  "status": "IN_PROGRESS",
+  "actorRef": "agent1"
+}
+```
+
+Expected response: `200 OK`
+
+#### Supported Status Workflow
+
+Tickets follow a predefined status transition sequence:
+
+```text
+OPEN
+  |
+  v
+IN_PROGRESS
+  |
+  v
+RESOLVED
+  |
+  v
+CLOSED
+```
+
+Invalid transitions are rejected with `400 Bad Request`.
+
+For example, transitioning directly from `OPEN` to `CLOSED` is not permitted.
+
+### 5. Assign an Agent
+
+**PATCH** `/api/tickets/{id}/assignee`
+
+Request body:
+
+```json
+{
+  "assigneeRef": "agent2"
+}
+```
+
+Expected response: `200 OK`
+
+Updates the ticket's assigned agent reference.
+
+### 6. Retrieve Ticket Status History
+
+**GET** `/api/tickets/{id}/history`
+
+Example:
+
+```http
+GET /api/tickets/1/history
+```
+
+Expected response: `200 OK`
+
+Example response:
+
+```json
+[
+  {
+    "id": 1,
+    "oldStatus": "OPEN",
+    "newStatus": "IN_PROGRESS",
+    "actorRef": "agent1",
+    "changedAt": "2026-11-21T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "oldStatus": "IN_PROGRESS",
+    "newStatus": "RESOLVED",
+    "actorRef": "agent1",
+    "changedAt": "2026-11-21T11:30:00Z"
+  }
+]
+```
+
+Each recorded entry represents a ticket status change.
+
+## Ticket Priority
+
+The supported priority levels are:
 
 - `LOW`
 - `MEDIUM`
 - `HIGH`
 
-### Statuses
+## Ticket Status
+
+The supported ticket statuses are:
 
 - `OPEN`
 - `IN_PROGRESS`
 - `RESOLVED`
 - `CLOSED`
 
-Status changes follow this transition sequence:
+## Error Handling
 
-```text
-OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED
-```
+The application provides centralized exception handling through `GlobalExceptionHandler`.
 
-Skipping statuses or changing a closed ticket is rejected.
-
-## API
-
-Base URL:
-
-```text
-http://localhost:8080
-```
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/tickets` | Create a ticket |
-| `GET` | `/api/tickets` | List tickets, optionally filtered by status and priority |
-| `GET` | `/api/tickets/{id}` | Get a ticket |
-| `PATCH` | `/api/tickets/{id}/status` | Transition a ticket to the next valid status |
-| `PATCH` | `/api/tickets/{id}/assignee` | Assign or update an assignee reference |
-| `GET` | `/api/tickets/{id}/history` | Get status-change history |
-
-List filters:
-
-```text
-GET /api/tickets?status=OPEN
-GET /api/tickets?priority=HIGH
-GET /api/tickets?status=IN_PROGRESS&priority=HIGH
-```
-
-## Request examples
-
-Create a ticket:
-
-```bash
-curl -X POST http://localhost:8080/api/tickets \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Broken monitor",
-    "description": "The monitor flickers intermittently.",
-    "priority": "HIGH",
-    "requesterName": "Alice",
-    "requesterEmail": "alice@example.com"
-  }'
-```
-
-Update status:
-
-```bash
-curl -X PATCH http://localhost:8080/api/tickets/1/status \
-  -H "Content-Type: application/json" \
-  -d '{
-    "status": "IN_PROGRESS",
-    "actorRef": "agent1"
-  }'
-```
-
-Assign a ticket:
-
-```bash
-curl -X PATCH http://localhost:8080/api/tickets/1/assignee \
-  -H "Content-Type: application/json" \
-  -d '{
-    "assigneeRef": "agent1"
-  }'
-```
-
-## Local setup
-
-### Prerequisites
-
-- JDK 25
-- Docker with Docker Compose
-
-Docker is optional if you already run MySQL 8.x locally.
-
-### 1. Start MySQL
-
-```bash
-docker compose up -d
-```
-
-This starts MySQL on port `3306`, creates the `helpdesk_db` database, and stores data in the `helpdesk_mysql_data` volume.
-
-Default Docker Compose credentials:
-
-- Database: `helpdesk_db`
-- Username: `root`
-- Password: `rootpassword`
-
-### 2. Run the application
-
-On Windows:
-
-```bat
-mvnw.cmd spring-boot:run
-```
-
-On Linux or macOS:
-
-```bash
-./mvnw spring-boot:run
-```
-
-The API is available at `http://localhost:8080`.
-
-## Configuration
-
-Configuration is read from `src/main/resources/application.properties` and may be overridden with environment variables:
-
-| Environment variable | Default |
+| HTTP Status | Description |
 |---|---|
-| `DB_URL` | `jdbc:mysql://localhost:3306/helpdesk_db` |
-| `DB_USERNAME` | `root` |
-| `DB_PASSWORD` | none |
+| 400 Bad Request | Invalid request or status transition |
+| 404 Not Found | Requested ticket does not exist |
+| 500 Internal Server Error | Unexpected server-side error |
 
-Example:
-
-```bash
-DB_URL=jdbc:mysql://localhost:3306/helpdesk_db \
-DB_USERNAME=root \
-DB_PASSWORD=rootpassword \
-./mvnw spring-boot:run
-```
-
-Flyway applies migrations automatically. Hibernate validation is enabled with `spring.jpa.hibernate.ddl-auto=validate`; it does not create or alter tables.
-
-## Tests
-
-Run the test suite:
-
-```bash
-./mvnw test
-```
-
-On Windows:
-
-```bat
-mvnw.cmd test
-```
-
-## Build
-
-Create an executable JAR:
-
-```bash
-./mvnw clean package
-```
-
-The output is written to `target/helpdesk-lite-0.0.1-SNAPSHOT.jar`.
-
-## Error responses
-
-Errors use this JSON shape:
+Example error response:
 
 ```json
 {
   "status": 400,
   "error": "invalid_transition",
-  "message": "Invalid transition from OPEN to CLOSED"
+  "message": "Invalid transition from OPEN to CLOSED",
+  "timestamp": "2026-11-21T10:30:00Z"
 }
 ```
 
-Common error codes:
+## Project Structure
 
-- `not_found` - ticket does not exist
-- `invalid_transition` - status transition is not allowed
-- `validation_failed` - request validation failed
-- `internal_error` - unexpected server error
+```text
+helpdesk-lite/
+│
+├── src/
+│   ├── main/
+│   │   ├── java/com/helpdesklite/
+│   │   │   ├── controller/
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── enums/
+│   │   │   ├── exception/
+│   │   │   ├── repository/
+│   │   │   ├── service/
+│   │   │   └── HelpdeskLiteApplication.java
+│   │   │
+│   │   └── resources/
+│   │       ├── db/migration/
+│   │       └── application.properties
+│   │
+│   └── test/
+│       └── java/com/helpdesklite/
+│
+├── docker-compose.yml
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── README.md
+└── AI-USE.md
+```
+
+## Design Decisions
+
+1. **Layered Architecture:** Separates controllers, services, repositories, entities, DTOs, and exception handling.
+2. **DTO Pattern:** Separates API request and response models from persistence entities.
+3. **Enum-Based Status and Priority:** Uses predefined values to maintain consistency.
+4. **Controlled Status Transitions:** Enforces valid ticket lifecycle transitions in the service layer.
+5. **Status History Tracking:** Stores previous and new statuses, actor references, and timestamps.
+6. **Flyway Migrations:** Uses version-controlled SQL migrations to manage the database schema.
+7. **Global Exception Handling:** Provides structured error responses for API consumers.
+
+## Testing
+
+The application can be tested using:
+
+- Maven test execution.
+- Spring Boot controller tests.
+- Postman API requests.
+- Manual validation of ticket creation, filtering, status transitions, assignment, and history retrieval.
+
+## AI Usage Disclosure
+
+AI assistance was used during development for planning, implementation guidance, troubleshooting, and documentation.
+
+See [AI-USE.md](AI-USE.md) for details.
+
+## License
+
+This project was developed as part of a Java Backend Practical Assessment.
